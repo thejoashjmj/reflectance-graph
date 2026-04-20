@@ -1,5 +1,7 @@
 # Additional info to note:
 
+## **trialForCheckingReflectanceGraph folder contains the Arduino IDE .ino file**
+
 ## BACKEND SETUP 
 1. Clone the repo
 2. Open terminal in folder and run :
