@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reflectance Monitor</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .dashboard { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; width: 100%; max-width: 1100px; }
+        .chart-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 450px; }
+        .card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; }
+        .value { font-size: 3rem; font-weight: bold; color: #2563eb; margin: 10px 0; }
+        .label { color: #64748b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+        h2 { margin: 0 0 15px 0; font-size: 1.1rem; color: #1e293b; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="chart-box">
+            <h2>LDR Intensity (Live)</h2>
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <div class="card">
+            <div class="label">Distance</div>
+            <div id="distDisp" class="value">--</div>
+            <div class="label">Centimeters</div>
+            <hr style="width:80%; border:0; border-top:1px solid #eee; margin:20px 0;">
+            <div class="label">Raw LDR</div>
+            <div id="ldrDisp" style="font-size: 1.5rem; font-weight: bold; color: #ef4444;">--</div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const ctx = document.getElementById('mainChart').getContext('2d');
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Reflectance',
+                    data: [],
+                    borderColor: '#ef4444',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: { 
+                        display: true,
+                        ticks: { display: false }, // Hide timestamps to prevent X-axis clutter
+                        grid: { display: false }
+                    },
+                    y: { 
+                        min: 0, 
+                        max: 4095, 
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' }
+                    }
+                }
+            }
+        });
+
+        socket.on('sensor-update', (data) => {
+            // Update Text Displays
+            document.getElementById('distDisp').innerText = parseFloat(data.distance).toFixed(2);
+            document.getElementById('ldrDisp').innerText = data.value;
+
+            // Update Graph Logic
+            const maxPoints = 100; // This keeps the X-axis fixed in length
+            
+            chart.data.labels.push(data.time);
+            chart.data.datasets[0].data.push(data.value);
+
+            if (chart.data.labels.length > maxPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update('none'); // Update instantly
+        });
+    </script>
+</body>
+</html>
